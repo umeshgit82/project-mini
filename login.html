@@ -1,0 +1,235 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Login</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #3E362E, #865D26, #93785B, #AC8968);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        .login-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 300px;
+            text-align: center;
+        }
+        .login-container h2 {
+            margin-bottom: 1.5rem;
+        }
+        .login-container input {
+            width: 100%;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border: none;
+            border-radius: 5px;
+            background: #fff;
+            color: #333;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            background: #865D26;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .login-container button:hover {
+            background: #93785B;
+        }
+        #error-message {
+            color: #ff4d4d;
+            margin-top: 1rem;
+            display: none;
+        }
+        .vendor-page {
+            display: none;
+            background: linear-gradient(to bottom right, #003135, #024950, #0FA4AF, #AFDDE5);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .vendor-page .vendor-info {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: 0 auto;
+            color: #003135;
+        }
+        .vendor-page .vendor-info h2 {
+            margin-bottom: 1rem;
+        }
+        .vendor-page .vendor-info p {
+            margin: 0.5rem 0;
+        }
+        .vendor-page .file-upload {
+            margin: 1rem 0;
+        }
+        .vendor-page .file-upload input {
+            margin-top: 0.5rem;
+        }
+        .vendor-page .book-now {
+            background: #0FA4AF;
+            color: #fff;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 1rem;
+            width: 100%;
+        }
+        .vendor-page .book-now:hover {
+            background: #024950;
+        }
+        .vendor-page .logout {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: #003135;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .vendor-page .logout:hover {
+            background: #024950;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="login-container">
+        <h2>Vendor Login</h2>
+        <form action="/login" method="post">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button onclick="login()">Login</button>
+    </form>
+    </div>
+
+    <div class="vendor-page" id="vendor-page">
+        <div class="vendor-info">
+            <h2>Vendor Dashboard</h2>
+            <p><strong>Name:</strong> <span id="vendor-name"></span></p>
+            <p><strong>Email:</strong> <span id="vendor-email"></span></p>
+            <p><strong>Mobile:</strong> <span id="vendor-mobile"></span></p>
+            <div class="file-upload">
+                <label for="file-upload">Upload File:</label>
+                <input type="file" id="file-upload" accept=".pdf,.doc,.docx">
+            </div>
+            <button class="book-now" onclick="bookNow()">Book Now</button>
+        </div>
+        <button class="logout" onclick="logout()">Logout</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <script>
+        // Mock MongoDB data (replace with actual MongoDB connection)
+        const users = [
+            { email: "vendor1@example.com", password: "pass123", name: "Vendor One", mobile: "1234567890" },
+            { email: "vendor2@example.com", password: "pass456", name: "Vendor Two", mobile: "0987654321" }
+        ];
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            // Simulate MongoDB query
+            const user = users.find(u => u.email === email && u.password === password);
+
+            if (user) {
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('vendor-page').style.display = 'block';
+                document.getElementById('vendor-name').textContent = user.name;
+                document.getElementById('vendor-email').textContent = user.email;
+                document.getElementById('vendor-mobile').textContent = user.mobile;
+                errorMessage.style.display = 'none';
+            } else {
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        function bookNow() {
+            alert('Booking confirmed!');
+        }
+
+        function logout() {
+            document.getElementById('login-container').style.display = 'block';
+            document.getElementById('vendor-page').style.display = 'none';
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // For actual MongoDB integration, you would need a backend server (e.g., Node.js with MongoDB driver)
+        // Example backend code (not included in client-side):
+        
+        const { MongoClient } = require('mongodb');
+        const uri = "mongodb://localhost:27017";
+        const client = new MongoClient(uri);
+
+        async function authenticate(email, password) {
+            try {
+                await client.connect();
+                const db = client.db('loginreg');
+                const collection = db.collection('users');
+                const user = await collection.findOne({ email, password });
+                return user;
+            } finally {
+                await client.close();
+            }
+        }
+        
+    </script>
+</body>
+</html>

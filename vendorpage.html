@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome Page</title>
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #EAE7DC; /* Light beige background */
+    color: #8E8D8A; /* Dark gray text */
+}
+
+.vendor-page {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #DAC3A5; /* Warm beige for container */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.vendor-info {
+    padding: 20px;
+    text-align: center;
+}
+
+.vendor-info h2 {
+    color: #E85A4F; /* Vibrant red for headings */
+    margin-bottom: 20px;
+}
+
+.vendor-info p {
+    margin: 10px 0;
+    font-size: 1.1em;
+}
+
+.vendor-info p strong {
+    color: #8E8D8A; /* Dark gray for labels */
+}
+
+.file-upload {
+    margin: 20px 0;
+}
+
+.file-upload label {
+    display: block;
+    margin-bottom: 10px;
+    color: #8E8D8A; /* Dark gray for label */
+    font-weight: bold;
+}
+
+.file-upload input[type="file"] {
+    padding: 10px;
+    border: 2px solid #E98074; /* Soft red border */
+    border-radius: 4px;
+    background-color: #EAE7DC; /* Light beige input background */
+    color: #8E8D8A; /* Dark gray text */
+}
+
+
+
+.logout {
+    background-color: #8E8D8A; /* Dark gray for Logout button */
+    color: #EAE7DC; /* Light beige text */
+}
+
+.logout:hover {
+    background-color: #6b6a67; /* Slightly darker gray on hover */
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    .vendor-page {
+        margin: 20px;
+        padding: 15px;
+    }
+
+    .vendor-info h2 {
+        font-size: 1.5em;
+    }
+
+    .book-now, .logout {
+        width: 100%;
+        padding: 12px;
+        margin: 5px 0;
+    }
+}
+</style>
+
+
+</head>
+
+<body>
+  <div class="vendor-page" id="vendor-page">
+    <div class="vendor-info">
+        <h2>Vendor Dashboard</h2>
+        <form action="/vendorpage" action="post">
+        <p><strong>Name:</strong> <span id="vendor-name"></span></p>
+        <p><strong>Email:</strong> <span id="vendor-email"></span></p>
+        <p><strong>Mobile:</strong> <span id="vendor-mobile"></span></p>
+        <div class="file-upload">
+            <label for="file-upload">Upload File:</label>
+            <input type="file" id="file-upload" accept=".pdf,.doc,.docx">
+        </div>
+        
+    </div>
+    <button class="logout" onclick="logout()">Logout</button>
+</div>
+</form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+<script>
+    // Mock MongoDB data (replace with actual MongoDB connection)
+    const users = [
+        { email: "vendor1@example.com", password: "pass123", name: "Vendor One", mobile: "1234567890" },
+        { email: "vendor2@example.com", password: "pass456", name: "Vendor Two", mobile: "0987654321" }
+    ];
+
+    function login() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('error-message');
+
+        // Simulate MongoDB query
+        const user = users.find(u => u.email === email && u.password === password);
+
+        if (user) {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('vendor-page').style.display = 'block';
+            document.getElementById('vendor-name').textContent = user.name;
+            document.getElementById('vendor-email').textContent = user.email;
+            document.getElementById('vendor-mobile').textContent = user.mobile;
+            errorMessage.style.display = 'none';
+        } else {
+            errorMessage.style.display = 'block';
+        }
+    }
+
+    function bookNow() {
+        alert('Booking confirmed!');
+    }
+
+    function logout() {
+        document.getElementById('login-container').style.display = 'block';
+        document.getElementById('vendor-page').style.display = 'none';
+        document.getElementById('email').value = '';
+        document.getElementById('password').value = '';
+    }
+
+    // For actual MongoDB integration, you would need a backend server (e.g., Node.js with MongoDB driver)
+    // Example backend code (not included in client-side):
+    
+    const { MongoClient } = require('mongodb');
+    const url = "mongodb://localhost:27017";
+    const client = new MongoClient(uri);
+
+    async function authenticate(email, password) {
+        try {
+            await client.connect();
+            const db = client.db('loginreg');
+            const collection = db.collection('users');
+            const user = await collection.findOne({ email, password });
+            return user;
+        } finally {
+            await client.close();
+        }
+    }
+    
+</script>
+</body>
+</html>
